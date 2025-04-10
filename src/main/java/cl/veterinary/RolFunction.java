@@ -1,7 +1,10 @@
 package cl.veterinary;
 
-import cl.veterinary.model.Rol;
-import cl.veterinary.service.RolService;
+import java.util.Optional;
+
+import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.context.ApplicationContext;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.HttpMethod;
@@ -12,10 +15,8 @@ import com.microsoft.azure.functions.annotation.AuthorizationLevel;
 import com.microsoft.azure.functions.annotation.BindingName;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
-import org.springframework.boot.builder.SpringApplicationBuilder;
-import org.springframework.context.ApplicationContext;
-
-import java.util.Optional;
+import cl.veterinary.model.Rol;
+import cl.veterinary.service.RolService;
 
 
 public class RolFunction {
@@ -26,62 +27,7 @@ public class RolFunction {
     private final RolService rolService =
             context.getBean(RolService.class); // usa la interfaz
 
-    @FunctionName("findAllRol")
-    public HttpResponseMessage findAllCustomer(
-            @HttpTrigger(name = "req", methods = {HttpMethod.GET}, authLevel = AuthorizationLevel.FUNCTION)
-            HttpRequestMessage<Optional<String>> request,
-            final ExecutionContext executionContext) {
 
-        executionContext.getLogger().info("Procesando solicitud findAllRol...");
-
-        try {
-            var roles = rolService.findRolAll();
-            return request.createResponseBuilder(HttpStatus.OK).body(roles).build();
-        } catch (Exception e) {
-            executionContext.getLogger().severe("Error al obtener roles: " + e.getMessage());
-            return request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error interno al obtener los roles")
-                    .build();
-        }
-    }
-
-    @FunctionName("findRolesById")
-    public HttpResponseMessage findCustomerById(
-            @HttpTrigger(
-                    name = "req",
-                    methods = {HttpMethod.GET},
-                    authLevel = AuthorizationLevel.FUNCTION,
-                    route = "findRolesById/{id}") // ID como parte de la ruta
-            HttpRequestMessage<Optional<String>> request,
-            @BindingName("id") String id,
-            final ExecutionContext context) {
-
-        context.getLogger().info("Buscando roles por ID: " + id);
-
-        try {
-            Long rol = Long.parseLong(id);
-            Optional<Rol> roles = rolService.finRolById(rol);
-
-            if (roles.isPresent()) {
-                return request.createResponseBuilder(HttpStatus.OK)
-                        .body(roles)
-                        .build();
-            } else {
-                return request.createResponseBuilder(HttpStatus.NOT_FOUND)
-                        .body("Cliente con ID " + id + " no encontrado.")
-                        .build();
-            }
-        } catch (NumberFormatException e) {
-            return request.createResponseBuilder(HttpStatus.BAD_REQUEST)
-                    .body("ID inválido: debe ser numérico.")
-                    .build();
-        } catch (Exception e) {
-            context.getLogger().severe("Error al buscar cliente: " + e.getMessage());
-            return request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error interno al buscar el cliente.")
-                    .build();
-        }
-    }
 
     @FunctionName("saveRoles")
     public HttpResponseMessage saveCustomer(
@@ -102,9 +48,11 @@ public class RolFunction {
 
             Rol saved = rolService.saveRol(roles);
 
-            return request.createResponseBuilder(HttpStatus.CREATED)
-                    .body(saved)
-                    .build();
+            return request
+                .createResponseBuilder(HttpStatus.OK)
+                .header("Content-Type", "application/json") 
+                .body(saved)
+                .build();
 
         } catch (Exception e) {
             context.getLogger().severe("Error al guardar roles: " + e.getMessage());
@@ -153,9 +101,11 @@ public class RolFunction {
             // Guardar cambios
             Rol updated = rolService.updateRol(existing);
 
-            return request.createResponseBuilder(HttpStatus.OK)
-                    .body(updated)
-                    .build();
+            return request
+                .createResponseBuilder(HttpStatus.OK)
+                .header("Content-Type", "application/json") 
+                .body(updated)
+                .build();
 
         } catch (NumberFormatException e) {
             return request.createResponseBuilder(HttpStatus.BAD_REQUEST)
@@ -189,14 +139,18 @@ public class RolFunction {
             Optional<Rol> existing = rolService.finRolById(rolId);
             if (existing.isEmpty()) {
                 return request.createResponseBuilder(HttpStatus.NOT_FOUND)
-                        .body("Roles con ID " + id + " no encontrado.")
+                        .body(new Rol())
                         .build();
             }
 
             // Eliminar
             rolService.deleteRol(rolId);
 
-            return request.createResponseBuilder(HttpStatus.OK).build(); // 204 vacío
+            return request
+                .createResponseBuilder(HttpStatus.OK)
+                .header("Content-Type", "application/json") 
+                .body("Rol eliminado")
+                .build();
 
         } catch (NumberFormatException e) {
             return request.createResponseBuilder(HttpStatus.BAD_REQUEST)

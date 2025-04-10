@@ -16,11 +16,6 @@ public class RolServiceImpl implements RolService {
     private RolRepository rolRepository;
 
     @Override
-    public List<Rol> findRolAll() {
-        return rolRepository.findAll();
-    }
-
-    @Override
     public Optional<Rol> finRolById(Long id) {
         return rolRepository.findById(id);
      }
