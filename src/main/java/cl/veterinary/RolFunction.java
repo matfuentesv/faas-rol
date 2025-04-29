@@ -29,6 +29,67 @@ public class RolFunction {
 
 
 
+    @FunctionName("findAllRol")
+    public HttpResponseMessage findAllCustomer(
+            @HttpTrigger(name = "req", methods = {HttpMethod.GET}, authLevel = AuthorizationLevel.FUNCTION)
+            HttpRequestMessage<Optional<String>> request,
+            final ExecutionContext executionContext) {
+
+        executionContext.getLogger().info("Procesando solicitud findAllRol...");
+
+        try {
+            var roles = rolService.findRolAll();
+            return request.createResponseBuilder(HttpStatus.OK).body(roles).build();
+        } catch (Exception e) {
+            executionContext.getLogger().severe("Error al obtener roles: " + e.getMessage());
+            return request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error interno al obtener los roles")
+                    .build();
+        }
+    }
+
+    @FunctionName("findRolesById")
+    public HttpResponseMessage findCustomerById(
+            @HttpTrigger(
+                    name = "req",
+                    methods = {HttpMethod.GET},
+                    authLevel = AuthorizationLevel.FUNCTION,
+                    route = "findRolesById/{id}") // ID como parte de la ruta
+            HttpRequestMessage<Optional<String>> request,
+            @BindingName("id") String id,
+            final ExecutionContext context) {
+
+        context.getLogger().info("Buscando roles por ID: " + id);
+
+        try {
+            Long rol = Long.parseLong(id);
+            Optional<Rol> roles = rolService.finRolById(rol);
+
+            if (roles.isPresent()) {
+                return request.createResponseBuilder(HttpStatus.OK)
+                        .body(roles)
+                        .build();
+            } else {
+                return request.createResponseBuilder(HttpStatus.NOT_FOUND)
+                        .body("Cliente con ID " + id + " no encontrado.")
+                        .build();
+            }
+        } catch (NumberFormatException e) {
+            return request.createResponseBuilder(HttpStatus.BAD_REQUEST)
+                    .body("ID inválido: debe ser numérico.")
+                    .build();
+        } catch (Exception e) {
+            context.getLogger().severe("Error al buscar cliente: " + e.getMessage());
+            return request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error interno al buscar el cliente.")
+                    .build();
+        }
+    }
+
+
+
+
+
     @FunctionName("saveRoles")
     public HttpResponseMessage saveCustomer(
             @HttpTrigger(name = "req",
