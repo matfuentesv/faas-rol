@@ -1,43 +1,77 @@
 package cl.veterinary.service.impl;
 
-
-import cl.veterinary.model.Rol;
-import cl.veterinary.repository.RolRepository;
-import cl.veterinary.service.RolService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import cl.veterinary.client.EventProducerClient;
+import cl.veterinary.model.Rol;
+import cl.veterinary.model.RolEvent;
+import cl.veterinary.repository.RolRepository;
+import cl.veterinary.service.RolService;
 
 @Service
 public class RolServiceImpl implements RolService {
 
+    private static final Logger log = LoggerFactory.getLogger(RolServiceImpl.class);
+
     @Autowired
     private RolRepository rolRepository;
 
+    @Autowired
+    private EventProducerClient eventProducerClient;
+
+    private static final String FUNCTION_CODE = "dleoJoi2alggyThI3JUnVvNziSuQcYuovsD6JMVhFUt7AzFuw1yrKQ==";
 
     @Override
     public List<Rol> findRolAll() {
-        return rolRepository.findAll();
+        List<Rol> roles = rolRepository.findAll();
+        registerEvent(null, "Consulta de todos los roles", "GET_ALL");
+        return roles;
     }
 
     @Override
     public Optional<Rol> finRolById(Long id) {
-        return rolRepository.findById(id);
-     }
+        Optional<Rol> rol = rolRepository.findById(id);
+        if (rol.isPresent()) {
+            eventProducerClient.eventGet(FUNCTION_CODE, "GET", rol.get().getId());
+        } else {
+            log.info("Rol no encontrado para ID: {}", id);
+        }
+        return rol;
+    }
 
     @Override
     public Rol saveRol(Rol rol) {
-        return rolRepository.save(rol);
+        Rol savedRol = rolRepository.save(rol);
+        RolEvent evento = new RolEvent(savedRol.getId(), savedRol.getDescripcion());
+        eventProducerClient.eventPost(FUNCTION_CODE, "CREATE", evento);
+        return savedRol;
     }
 
     @Override
     public Rol updateRol(Rol rol) {
-        return rolRepository.save(rol);
+        Rol updatedRol = rolRepository.save(rol);
+        registerEvent(updatedRol.getId(), updatedRol.getDescripcion(), "UPDATE");
+        return updatedRol;
     }
 
     @Override
     public void deleteRol(Long id) {
         rolRepository.deleteById(id);
+        registerEvent(id, "Rol eliminado", "DELETE");
+    }
+
+    private void registerEvent(Long id, String descripcion, String operacion) {
+        try {
+            RolEvent evento = new RolEvent(id, descripcion);
+        
+        } catch (Exception e) {
+            log.info("Error al registrar evento de auditoría: {}", e.getMessage());
+        }
     }
 }
