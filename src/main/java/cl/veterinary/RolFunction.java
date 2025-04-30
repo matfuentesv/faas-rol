@@ -15,6 +15,7 @@ import com.microsoft.azure.functions.annotation.AuthorizationLevel;
 import com.microsoft.azure.functions.annotation.BindingName;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
+
 import cl.veterinary.model.Rol;
 import cl.veterinary.service.RolService;
 
@@ -25,7 +26,7 @@ public class RolFunction {
             new SpringApplicationBuilder(SpringBootAzureApp.class).run();
 
     private final RolService rolService =
-            context.getBean(RolService.class); // usa la interfaz
+            context.getBean(RolService.class); 
 
 
 
@@ -39,7 +40,9 @@ public class RolFunction {
 
         try {
             var roles = rolService.findRolAll();
-            return request.createResponseBuilder(HttpStatus.OK).body(roles).build();
+            return request.createResponseBuilder(HttpStatus.OK)
+                    .header("Content-Type", "application/json")
+                    .body(roles).build();
         } catch (Exception e) {
             executionContext.getLogger().severe("Error al obtener roles: " + e.getMessage());
             return request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -54,7 +57,7 @@ public class RolFunction {
                     name = "req",
                     methods = {HttpMethod.GET},
                     authLevel = AuthorizationLevel.FUNCTION,
-                    route = "findRolesById/{id}") // ID como parte de la ruta
+                    route = "findRolesById/{id}") 
             HttpRequestMessage<Optional<String>> request,
             @BindingName("id") String id,
             final ExecutionContext context) {
@@ -67,7 +70,8 @@ public class RolFunction {
 
             if (roles.isPresent()) {
                 return request.createResponseBuilder(HttpStatus.OK)
-                        .body(roles)
+                        .header("Content-Type", "application/json")
+                        .body(roles.get())
                         .build();
             } else {
                 return request.createResponseBuilder(HttpStatus.NOT_FOUND)

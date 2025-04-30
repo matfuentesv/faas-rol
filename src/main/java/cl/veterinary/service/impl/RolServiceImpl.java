@@ -2,12 +2,10 @@ package cl.veterinary.service.impl;
 
 import java.util.List;
 import java.util.Optional;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import cl.veterinary.client.EventProducerClient;
 import cl.veterinary.model.Rol;
 import cl.veterinary.model.RolEvent;
@@ -30,7 +28,7 @@ public class RolServiceImpl implements RolService {
     @Override
     public List<Rol> findRolAll() {
         List<Rol> roles = rolRepository.findAll();
-        registerEvent(null, "Consulta de todos los roles", "GET_ALL");
+        eventProducerClient.eventGet(FUNCTION_CODE, "GET", 1L);
         return roles;
     }
 
@@ -56,22 +54,16 @@ public class RolServiceImpl implements RolService {
     @Override
     public Rol updateRol(Rol rol) {
         Rol updatedRol = rolRepository.save(rol);
-        registerEvent(updatedRol.getId(), updatedRol.getDescripcion(), "UPDATE");
+        RolEvent evento = new RolEvent(updatedRol.getId(), updatedRol.getDescripcion());
+        eventProducerClient.eventPut(FUNCTION_CODE, "UPDATE", evento);
         return updatedRol;
     }
 
     @Override
     public void deleteRol(Long id) {
         rolRepository.deleteById(id);
-        registerEvent(id, "Rol eliminado", "DELETE");
+        RolEvent evento = new RolEvent(id);
+        eventProducerClient.eventDelete(FUNCTION_CODE, "DELETE", evento);
     }
 
-    private void registerEvent(Long id, String descripcion, String operacion) {
-        try {
-            RolEvent evento = new RolEvent(id, descripcion);
-        
-        } catch (Exception e) {
-            log.info("Error al registrar evento de auditoría: {}", e.getMessage());
-        }
-    }
 }
