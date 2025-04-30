@@ -5,8 +5,12 @@ public class RolEvent {
     private Long id;
     private String descripcion;
 
-    // Constructor vacío obligatorio para Feign
+
     public RolEvent() {
+    }
+
+    public RolEvent(Long id) {
+        this.id = id;
     }
 
     public RolEvent(Long id, String descripcion ) {
@@ -15,7 +19,7 @@ public class RolEvent {
 
     }
 
-    // Getters y Setters
+
     public Long getId() {
         return id;
     }
